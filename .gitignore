@@ -1,5 +1,7 @@
+# virtual environment
 venv/
-__pycache__/
+
+# env variables
 .env
 
 # large files
@@ -13,9 +15,12 @@ instagram_store.json
 
 # OS generated files
 .DS_Store
-.DS_Store?__pycache__/
+.DS_Store?
+
+# python cache
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-venv/
+
