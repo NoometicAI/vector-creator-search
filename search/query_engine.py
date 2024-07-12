@@ -1,6 +1,6 @@
 from llama_index.core.postprocessor import LLMRerank
 from llama_index.embeddings.openai import OpenAIEmbedding
-# from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core import load_index_from_storage
 from llama_index.core import StorageContext
 import os
@@ -25,10 +25,10 @@ async def get_query_engine(persist_dir):
     # Initialize LLM
     llm = OpenAI(temperature=0.1, model="gpt-4-turbo")
 
-    # Initialize embedding model
-    embed_model = OpenAIEmbedding()
-    # For future use with BAAI model:
-    # embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+    # Initialize embedding model if using the persist_dir in this directory
+    # embed_model = OpenAIEmbedding()
+    # Use BAAI model for production persist_dir
+    embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
     logger.debug(f"Embedding model initialized: {embed_model}")
 
     # Load index and create query engine
