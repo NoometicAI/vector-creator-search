@@ -2,6 +2,7 @@ from llama_index.core.postprocessor import LLMRerank
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core import load_index_from_storage
+from llama_index.core.retrievers import KGTableRetriever, KnowledgeGraphRAGRetriever
 from llama_index.core import StorageContext
 import os
 from llama_index.llms.openai import OpenAI
@@ -17,6 +18,22 @@ def custom_parse_choice_select_answer_fn(answer: str, num_choices: int):
     _answer = answer.split('Explanation')[0]
     return default_parse_choice_select_answer_fn(_answer, num_choices)
 
+async def get_kg_retriever(persist_dir):
+    logger.debug(f"Initializing KG Retriever with persist_dir: {persist_dir}")
+    os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+
+    storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
+    logger.debug(f"Storage context created: {storage_context}")
+
+    kg_index = load_index_from_storage(storage_context)
+    logger.debug(f"KG Index loaded: {kg_index}")
+
+    kg_retriever = KnowledgeGraphRAGRetriever(kg_index)
+    logger.debug(f"KG Retriever created: {kg_retriever}")
+
+    return kg_retriever
+
+
 async def get_query_engine(persist_dir):
     logger.debug(f"Initializing query engine with persist_dir: {persist_dir}")
     
@@ -25,10 +42,8 @@ async def get_query_engine(persist_dir):
     # Initialize LLM
     llm = OpenAI(temperature=0.1, model="gpt-4-turbo")
 
-    # Initialize embedding model if using the persist_dir in this directory
-    # embed_model = OpenAIEmbedding()
-    # Use BAAI model for production persist_dir
-    embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+    # Initialize embedding model
+    embed_model = OpenAIEmbedding()
     logger.debug(f"Embedding model initialized: {embed_model}")
 
     # Load index and create query engine
@@ -69,8 +84,11 @@ def get_test_query_engine():
 
     new_index = load_index_from_storage(storage_context)
 
-    query_engine = new_index.as_query_engine(response_mode="tree_summarize", embedding_mode="hybrid",
-                                             similarity_top_k=10,
-                                             llm=llm)
+    query_engine = new_index.as_query_engine(
+        response_mode="tree_summarize", 
+        embedding_mode="hybrid",
+        similarity_top_k=10,
+        llm=llm
+    )
 
     return query_engine
