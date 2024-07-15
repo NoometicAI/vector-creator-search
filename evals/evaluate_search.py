@@ -54,11 +54,14 @@ async def evaluate_queries(query_engine, queries: List[str]) -> List[Dict[str, A
             contexts=contexts
         )
         
-        console.print(Panel(f"[bold green]Faithfulness:[/bold green] {faithfulness_result.score:.2f} ({'Pass' if faithfulness_result.passing else 'Fail'})\n"
-                            f"[bold]Explanation:[/bold] {faithfulness_result.feedback}\n\n"
-                            f"[bold green]Relevancy:[/bold green] {relevancy_result.score:.2f}\n"
-                            f"[bold]Explanation:[/bold] {relevancy_result.feedback}",
-                            title="Evaluation Results", expand=False))
+        console.print(Panel(
+            f"[bold green]Faithfulness:[/bold green] {faithfulness_result.score:.2f} ({'Pass' if faithfulness_result.passing else 'Fail'})\n"
+            f"[bold]Explanation:[/bold] {faithfulness_result.feedback}\n\n"
+            f"[bold green]Relevancy:[/bold green] {relevancy_result.score:.2f}\n"
+            f"[bold]Explanation:[/bold] {relevancy_result.feedback}",
+            title="Evaluation Results", 
+            expand=False
+        ))
         
         results.append({
             "query": query,
