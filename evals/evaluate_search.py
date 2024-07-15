@@ -2,61 +2,83 @@ import asyncio
 from typing import List, Dict, Any
 from search.query_engine import get_query_engine
 from llama_index.core.evaluation import FaithfulnessEvaluator, RelevancyEvaluator
+from llama_index.llms.ollama import Ollama
 from llama_index.llms.openai import OpenAI
 from base import BaseConfig
 import logging
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 
-config = BaseConfig("evaluation", log_level=logging.DEBUG)
+# Configure logging
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger("evaluation")
+logger.setLevel(logging.INFO)
+
+# Silence specific loggers that are too verbose
+logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
 console = Console()
+
+# EVAL_LLM = Ollama(model="llama3", request_timeout=360.0, temperature=0)
+EVAL_LLM = OpenAI(model="gpt-4", temperature=0)
 
 async def evaluate_queries(query_engine, queries: List[str]) -> List[Dict[str, Any]]:
     results = []
-    faithfulness_evaluator = FaithfulnessEvaluator(llm=OpenAI(model="gpt-4", temperature=0))
-    relevancy_evaluator = RelevancyEvaluator(llm=OpenAI(model="gpt-4", temperature=0))
+    faithfulness_evaluator = FaithfulnessEvaluator(llm=EVAL_LLM)
+    relevancy_evaluator = RelevancyEvaluator(llm=EVAL_LLM)
 
     for i, query in enumerate(queries, 1):
-        logger.debug(f"Processing query {i}: {query}")
+        console.print(f"\n[bold cyan]Query {i}:[/bold cyan] {query}")
         
         response = await query_engine.aquery(query)
-        logger.debug(f"Raw response: {response}")
+        console.print(Panel(str(response), title="Response", expand=False))
         
         contexts = [node.node.get_content() for node in response.source_nodes]
         
-        # Evaluate faithfulness
+        console.print("[bold magenta]Source Nodes:[/bold magenta]")
+        for j, context in enumerate(contexts, 1):
+            console.print(f"[bold]Node {j}:[/bold]\n{context}\n")
+        
         faithfulness_result = await faithfulness_evaluator.aevaluate(
             query=query,
             response=str(response),
             contexts=contexts
         )
         
-        # Evaluate relevancy
         relevancy_result = await relevancy_evaluator.aevaluate(
             query=query,
             response=str(response),
             contexts=contexts
         )
         
+        console.print(Panel(f"[bold green]Faithfulness:[/bold green] {faithfulness_result.score:.2f} ({'Pass' if faithfulness_result.passing else 'Fail'})\n"
+                            f"[bold]Explanation:[/bold] {faithfulness_result.feedback}\n\n"
+                            f"[bold green]Relevancy:[/bold green] {relevancy_result.score:.2f}\n"
+                            f"[bold]Explanation:[/bold] {relevancy_result.feedback}",
+                            title="Evaluation Results", expand=False))
+        
         results.append({
             "query": query,
             "response": str(response),
             "faithfulness_score": faithfulness_result.score,
             "faithfulness_passing": faithfulness_result.passing,
+            "faithfulness_feedback": faithfulness_result.feedback,
             "relevancy_score": relevancy_result.score,
+            "relevancy_feedback": relevancy_result.feedback,
             "num_source_nodes": len(response.source_nodes),
         })
         
-        logger.debug(f"Evaluation results for query {i}:")
-        logger.debug(f"Faithfulness: {faithfulness_result.score:.2f} ({'Pass' if faithfulness_result.passing else 'Fail'})")
-        logger.debug(f"Relevancy: {relevancy_result.score:.2f}")
-        logger.debug(f"Number of source nodes: {len(response.source_nodes)}")
+        console.print("─" * 80)
         
     return results
 
 def print_summary(results: List[Dict[str, Any]]):
-    table = Table(title="Evaluation Summary")
+    console.print("\n[bold underline]Evaluation Summary[/bold underline]\n")
+    
+    table = Table(title="Query Results")
     
     table.add_column("Query", style="cyan")
     table.add_column("Faithfulness", style="magenta")
@@ -82,7 +104,6 @@ def print_summary(results: List[Dict[str, Any]]):
     console.print(f"[bold]Average Number of Source Nodes:[/bold] {avg_source_nodes:.2f}")
 
 async def main():
-    logging.basicConfig(level=logging.DEBUG)
     persist_dir = "./persist_dir"  # Adjust this path as needed
     query_engine = await get_query_engine(persist_dir, eval_mode=True)
     
