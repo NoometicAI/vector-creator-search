@@ -30,7 +30,7 @@ async def startup_event():
     global query_engine
     persist_dir = "./persist_dir"  # Path to index. Adjust this path as needed
     try:
-        query_engine = await get_query_engine(persist_dir)
+        query_engine = await get_query_engine(persist_dir, eval_mode=False)
         logger.debug("Query engine initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing query engine: {str(e)}")

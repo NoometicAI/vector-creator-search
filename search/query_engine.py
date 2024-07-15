@@ -8,15 +8,12 @@ import os
 from llama_index.llms.openai import OpenAI
 from llama_index.core.indices.utils import default_parse_choice_select_answer_fn
 import dotenv; dotenv.load_dotenv()
+from base import BaseConfig
 import logging
+from search.parsers import custom_parse_choice_select_answer_fn, eval_parse_choice_select_answer_fn
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
-def custom_parse_choice_select_answer_fn(answer: str, num_choices: int):
-    print('====>>', answer)
-    _answer = answer.split('Explanation')[0]
-    return default_parse_choice_select_answer_fn(_answer, num_choices)
+config = BaseConfig("query_engine", log_level=logging.INFO)
+logger = logging.getLogger("query_engine")
 
 async def get_kg_retriever(persist_dir):
     logger.debug(f"Initializing KG Retriever with persist_dir: {persist_dir}")
@@ -34,8 +31,8 @@ async def get_kg_retriever(persist_dir):
     return kg_retriever
 
 
-async def get_query_engine(persist_dir):
-    logger.debug(f"Initializing query engine with persist_dir: {persist_dir}")
+async def get_query_engine(persist_dir, eval_mode=False):
+    logger.debug(f"Initializing query engine with persist_dir: {persist_dir}, eval_mode: {eval_mode}")
     
     os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
@@ -55,7 +52,8 @@ async def get_query_engine(persist_dir):
 
     llm_rerank = llm
 
-    reranker = LLMRerank(top_n=20, llm=llm_rerank, parse_choice_select_answer_fn=custom_parse_choice_select_answer_fn)
+    parse_fn = eval_parse_choice_select_answer_fn if eval_mode else custom_parse_choice_select_answer_fn
+    reranker = LLMRerank(top_n=20, llm=llm_rerank, parse_choice_select_answer_fn=parse_fn)
 
     query_engine = new_index.as_query_engine(
         llm=llm,
@@ -63,9 +61,7 @@ async def get_query_engine(persist_dir):
         response_mode="compact",
         embedding_mode="hybrid",
         similarity_top_k=25,
-        node_postprocessors=[
-            reranker
-        ],
+        node_postprocessors=[reranker],
     )
     logger.debug(f"Query engine created with embed_model: {embed_model}")
     logger.debug(f"Query engine type: {type(query_engine)}")
