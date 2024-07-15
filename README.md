@@ -55,3 +55,9 @@ You can test the API using curl. Here's an example:
     ```
 
 
+## Running Evals
+
+Evals will run the search and evaluate the results. A report will print to the console. You can update the queries to evaluation queries in the `evals/evaluate_search.py` file.
+   ```
+   python -m evals.evaluate_search
+   ```
