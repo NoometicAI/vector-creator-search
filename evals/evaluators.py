@@ -25,23 +25,31 @@ async def evaluate_query(query_engine, query: str) -> Dict[str, Any]:
     response = await query_engine.aquery(query)
     query_runtime = time.time() - start_time
 
+    result = {
+        "query": query,
+        "response": response.response,
+        "source_nodes": response.source_nodes,
+        "num_source_nodes": len(response.source_nodes),
+        "query_runtime": query_runtime,
+    }
+
+    if hasattr(response, 'relevant_docs'):
+        result['relevant_docs'] = response.relevant_docs
+
     contexts = [node.node.get_content() for node in response.source_nodes]
     
     faithfulness_result = await evaluate_faithfulness(query, str(response), contexts)
     relevancy_result = await evaluate_relevancy(query, str(response), contexts)
 
-    return {
-        "query": query,
-        "response": str(response),
+    result.update({
         "faithfulness_score": faithfulness_result.score,
         "faithfulness_passing": faithfulness_result.passing,
         "faithfulness_feedback": faithfulness_result.feedback,
         "relevancy_score": relevancy_result.score,
         "relevancy_feedback": relevancy_result.feedback,
-        "num_source_nodes": len(response.source_nodes),
-        "source_nodes": contexts,
-        "query_runtime": query_runtime
-    }
+    })
+
+    return result
 
 async def evaluate_faithfulness(query: str, response: str, contexts: List[str]) -> Any:
     """

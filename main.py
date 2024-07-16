@@ -28,7 +28,8 @@ query_engine = None
 @app.on_event("startup")
 async def startup_event():
     global query_engine
-    persist_dir = "./persist_dir"  # Path to index. Adjust this path as needed
+    persist_dir = "./persist_dir"  # default persist dir from this dir (set to test) 
+    # persist_dir = "/Volumes/LaCie/noometic/indexes/7.15.24/_data/persist_dir_11_39_june_12_free" # ken's ssd
     try:
         query_engine = await get_query_engine(persist_dir, eval_mode=False)
         logger.debug("Query engine initialized successfully")
