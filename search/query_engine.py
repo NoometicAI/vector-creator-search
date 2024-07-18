@@ -17,29 +17,54 @@ from search.parsers import custom_parse_choice_select_answer_fn
 config = BaseConfig("query_engine", log_level=logging.INFO)
 logger = logging.getLogger("query_engine")
 
-# Define default parameters
-DEFAULT_PARAMS = {
-    "llm_model": "gpt-4-turbo",
-    "llm_temperature": 0.1,
-    "embed_model": "openai",
-    # "embed_model": "BAAI/bge-small-en-v1.5",
-    "response_mode": "compact",
-    "embedding_mode": "hybrid",
-    "similarity_top_k": 25,
-    "rerank_top_n": 20
-}
 
-# Define evaluation parameters (currently same as default)
-# Define default parameters
-EVAL_PARAMS = {
-    "llm_model": "gpt-4-turbo",
-    "llm_temperature": 0.1,
-    "embed_model": "BAAI/bge-small-en-v1.5",
-    "response_mode": "compact",
-    "embedding_mode": "hybrid",
-    "similarity_top_k": 25,
-    "rerank_top_n": 20
-}
+# Environment setup
+ENV = os.getenv('ENV', 'dev')
+
+if ENV == 'dev':
+    # Define default parameters
+    DEFAULT_PARAMS = {
+        "llm_model": "gpt-4-turbo",
+        "llm_temperature": 0.1,
+        # "embed_model": "openai",
+        "embed_model": "BAAI/bge-small-en-v1.5",
+        "response_mode": "compact",
+        "embedding_mode": "hybrid",
+        "similarity_top_k": 25,
+        "rerank_top_n": 20
+    }
+    # Define evaluation parameters (currently same as default)
+    EVAL_PARAMS = {
+        "llm_model": "gpt-4-turbo",
+        "llm_temperature": 0.1,
+        "embed_model": "BAAI/bge-small-en-v1.5",
+        "response_mode": "compact",
+        "embedding_mode": "hybrid",
+        "similarity_top_k": 25,
+        "rerank_top_n": 20
+    }
+else:
+    # Define default parameters
+    DEFAULT_PARAMS = {
+        "llm_model": "gpt-4-turbo",
+        "llm_temperature": 0.1,
+        # "embed_model": "openai",
+        "embed_model": "BAAI/bge-small-en-v1.5",
+        "response_mode": "compact",
+        "embedding_mode": "hybrid",
+        "similarity_top_k": 25,
+        "rerank_top_n": 20
+    }
+    # Define evaluation parameters (currently same as default)
+    EVAL_PARAMS = {
+        "llm_model": "gpt-4-turbo",
+        "llm_temperature": 0.1,
+        "embed_model": "BAAI/bge-small-en-v1.5",
+        "response_mode": "compact",
+        "embedding_mode": "hybrid",
+        "similarity_top_k": 25,
+        "rerank_top_n": 20
+    }
 
 async def get_query_engine(persist_dir="./persist_dir", eval_mode=False):
     logger.info("Initializing query engine...")
